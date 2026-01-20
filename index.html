@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Annotator</title>
+  <script src="pdfjs/build/pdf.mjs" type="module" id="pdfjs-script"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f3f3f3;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Title Bar */
+    .title-bar {
+      background: linear-gradient(to bottom, #ffffff 0%, #f5f5f5 100%);
+      border-bottom: 1px solid #d4d4d4;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 40px;
+    }
+
+    .title-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .file-name {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .title-bar-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .title-btn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 6px 16px;
+      font-size: 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-weight: 500;
+    }
+
+    .title-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .title-btn.secondary {
+      background: #6b7280;
+    }
+
+    .title-btn.secondary:hover {
+      background: #4b5563;
+    }
+
+    /* Menu Bar */
+    .menu-bar {
+      background: #f8f9fa;
+      border-bottom: 1px solid #d4d4d4;
+      display: flex;
+      padding: 0;
+      user-select: none;
+    }
+
+    .menu-item {
+      position: relative;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .menu-item:hover,
+    .menu-item.active {
+      background: #e5e7eb;
+    }
+
+    .menu-label {
+      font-size: 13px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .menu-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: white;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      min-width: 220px;
+      padding: 4px 0;
+      display: none;
+      z-index: 1000;
+    }
+
+    .menu-dropdown.visible {
+      display: block;
+    }
+
+    .menu-option {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .menu-option:hover {
+      background: #f3f4f6;
+    }
+
+    .menu-option.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .menu-option.disabled:hover {
+      background: transparent;
+    }
+
+    .menu-option-label {
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .menu-option-shortcut {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-left: 24px;
+    }
+
+    .menu-divider {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 4px 0;
+    }
+
+    /* Ribbon Container */
+    .ribbon-container {
+      background: #f8f9fa;
+      border-bottom: 1px solid #d4d4d4;
+    }
+
+    /* Ribbon Tabs */
+    .ribbon-tabs {
+      background: linear-gradient(to bottom, #ffffff 0%, #f5f5f5 100%);
+      border-bottom: 1px solid #d4d4d4;
+      display: flex;
+      padding: 0 8px;
+      gap: 2px;
+    }
+
+    .ribbon-tab {
+      padding: 8px 20px;
+      font-size: 13px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #333;
+      font-weight: 500;
+      border-top: 3px solid transparent;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .ribbon-tab:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .ribbon-tab.active {
+      background: #ffffff;
+      border-top-color: #2563eb;
+      color: #2563eb;
+    }
+
+    /* Ribbon Content */
+    .ribbon-content {
+      background: #ffffff;
+      padding: 8px 16px;
+      display: none;
+      min-height: 110px;
+    }
+
+    .ribbon-content.active {
+      display: block;
+    }
+
+    .ribbon-groups {
+      display: flex;
+      gap: 4px;
+      align-items: flex-start;
+    }
+
+    .ribbon-group {
+      display: flex;
+      flex-direction: column;
+      padding: 4px 8px;
+      border-right: 1px solid #e5e7eb;
+      min-width: 80px;
+    }
+
+    .ribbon-group:last-child {
+      border-right: none;
+    }
+
+    .ribbon-group-label {
+      font-size: 11px;
+      color: #6b7280;
+      text-align: center;
+      margin-top: 4px;
+      font-weight: 500;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 4px;
+    }
+
+    .ribbon-group-content {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 4px 0;
+    }
+
+    /* Ribbon Buttons */
+    .ribbon-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 10px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.15s;
+      min-width: 60px;
+      gap: 4px;
+    }
+
+    .ribbon-btn:hover {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+    }
+
+    .ribbon-btn.active {
+      background: #dbeafe;
+      border-color: #3b82f6;
+    }
+
+    .ribbon-btn-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ribbon-btn-icon svg {
+      width: 24px;
+      height: 24px;
+      stroke: #374151;
+    }
+
+    .ribbon-btn.active .ribbon-btn-icon svg {
+      stroke: #2563eb;
+    }
+
+    .ribbon-btn-label {
+      font-size: 11px;
+      color: #374151;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .ribbon-btn.active .ribbon-btn-label {
+      color: #2563eb;
+      font-weight: 600;
+    }
+
+    /* Large ribbon buttons */
+    .ribbon-btn.large {
+      flex-direction: row;
+      min-width: 80px;
+      padding: 6px 12px;
+      gap: 8px;
+    }
+
+    .ribbon-btn.large .ribbon-btn-icon {
+      width: 40px;
+      height: 40px;
+    }
+
+    .ribbon-btn.large .ribbon-btn-icon svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .ribbon-btn.large .ribbon-btn-label {
+      font-size: 12px;
+      text-align: left;
+    }
+
+    /* Ribbon dropdown */
+    .ribbon-dropdown {
+      position: relative;
+    }
+
+    .ribbon-dropdown-arrow {
+      position: absolute;
+      right: 4px;
+      bottom: 4px;
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 4px solid #6b7280;
+    }
+
+    /* Color picker button */
+    .ribbon-color-btn {
+      position: relative;
+    }
+
+    .ribbon-color-indicator {
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 4px;
+      border-radius: 2px;
+    }
+
+    /* Input controls */
+    .ribbon-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 4px;
+    }
+
+    .ribbon-input-label {
+      font-size: 10px;
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .ribbon-input {
+      width: 60px;
+      padding: 4px 6px;
+      border: 1px solid #d1d5db;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+
+    .ribbon-color-input {
+      width: 40px;
+      height: 32px;
+      border: 1px solid #d1d5db;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    /* Content Area */
+    .content {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+      background: #525659;
+    }
+
+    .main-view {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      overflow: auto;
+      padding: 40px 20px 20px 20px;
+    }
+
+    #placeholder {
+      text-align: center;
+      color: #9ca3af;
+      margin: auto;
+    }
+
+    #placeholder svg {
+      width: 100px;
+      height: 100px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    #placeholder h2 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #d1d5db;
+    }
+
+    #placeholder p {
+      font-size: 16px;
+      opacity: 0.8;
+    }
+
+    #pdf-container {
+      display: none;
+    }
+
+    #pdf-container.visible {
+      display: block;
+    }
+
+    #canvas-wrapper {
+      display: inline-block;
+      max-width: 100%;
+      margin-top: 0;
+    }
+
+    #canvas-container {
+      position: relative;
+      margin: 0 auto;
+      display: inline-block;
+    }
+
+    .continuous-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+      padding-top: 20px;
+    }
+
+    .page-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+
+    .page-number-label {
+      position: absolute;
+      top: -25px;
+      left: 0;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    #pdf-canvas {
+      display: block;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      background: white;
+    }
+
+    #annotation-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      cursor: crosshair;
+    }
+
+    .continuous-container canvas {
+      display: block;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      background: white;
+    }
+
+    .continuous-container .annotation-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      cursor: crosshair;
+    }
+
+    /* Properties Panel */
+    .properties-panel {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      width: 280px;
+      background: white;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border: 1px solid #d1d5db;
+      padding: 16px;
+      display: none;
+      z-index: 50;
+    }
+
+    .properties-panel.visible {
+      display: block;
+    }
+
+    .properties-panel h3 {
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      color: #1f2937;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .property-group {
+      margin-bottom: 12px;
+    }
+
+    .property-group label {
+      display: block;
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .property-group input[type="color"],
+    .property-group input[type="number"],
+    .property-group input[type="text"],
+    .property-group textarea {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 3px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    .property-group textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .property-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .property-btn {
+      flex: 1;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 3px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    .property-btn.delete {
+      background: #ef4444;
+      color: white;
+    }
+
+    .property-btn.delete:hover {
+      background: #dc2626;
+    }
+
+    .property-btn.close {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .property-btn.close:hover {
+      background: #d1d5db;
+    }
+
+    /* Page Controls */
+    .page-controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(31, 41, 55, 0.95);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .page-controls.visible {
+      display: flex;
+    }
+
+    .page-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .page-info {
+      font-size: 13px;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .zoom-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding-left: 12px;
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <!-- Title Bar -->
+  <div class="title-bar">
+    <div class="title-bar-left">
+      <span class="app-title">PDF Annotator</span>
+      <span class="file-name" id="file-info"></span>
+    </div>
+  </div>
+
+  <!-- Menu Bar -->
+  <div class="menu-bar">
+    <div class="menu-item" data-menu="file">
+      <span class="menu-label">File</span>
+      <div class="menu-dropdown" id="menu-file">
+        <div class="menu-option" id="menu-open">
+          <span class="menu-option-label">Open...</span>
+          <span class="menu-option-shortcut">Ctrl+O</span>
+        </div>
+        <div class="menu-option" id="menu-save">
+          <span class="menu-option-label">Save</span>
+          <span class="menu-option-shortcut">Ctrl+S</span>
+        </div>
+        <div class="menu-option" id="menu-save-as">
+          <span class="menu-option-label">Save As...</span>
+          <span class="menu-option-shortcut">Ctrl+Shift+S</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-option" id="menu-close">
+          <span class="menu-option-label">Close</span>
+          <span class="menu-option-shortcut">Ctrl+W</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-option" id="menu-exit">
+          <span class="menu-option-label">Exit</span>
+          <span class="menu-option-shortcut">Alt+F4</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-item" data-menu="edit">
+      <span class="menu-label">Edit</span>
+      <div class="menu-dropdown" id="menu-edit">
+        <div class="menu-option" id="menu-undo">
+          <span class="menu-option-label">Undo</span>
+          <span class="menu-option-shortcut">Ctrl+Z</span>
+        </div>
+        <div class="menu-option" id="menu-redo">
+          <span class="menu-option-label">Redo</span>
+          <span class="menu-option-shortcut">Ctrl+Y</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-option" id="menu-delete">
+          <span class="menu-option-label">Delete</span>
+          <span class="menu-option-shortcut">Delete</span>
+        </div>
+        <div class="menu-option" id="menu-clear-page">
+          <span class="menu-option-label">Clear Page Annotations</span>
+          <span class="menu-option-shortcut">Ctrl+Shift+C</span>
+        </div>
+        <div class="menu-option" id="menu-clear-all">
+          <span class="menu-option-label">Clear All Annotations</span>
+          <span class="menu-option-shortcut"></span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-option" id="menu-select-all">
+          <span class="menu-option-label">Select All</span>
+          <span class="menu-option-shortcut">Ctrl+A</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-item" data-menu="view">
+      <span class="menu-label">View</span>
+      <div class="menu-dropdown" id="menu-view">
+        <div class="menu-option" id="menu-zoom-in">
+          <span class="menu-option-label">Zoom In</span>
+          <span class="menu-option-shortcut">Ctrl++</span>
+        </div>
+        <div class="menu-option" id="menu-zoom-out">
+          <span class="menu-option-label">Zoom Out</span>
+          <span class="menu-option-shortcut">Ctrl+-</span>
+        </div>
+        <div class="menu-option" id="menu-actual-size">
+          <span class="menu-option-label">Actual Size</span>
+          <span class="menu-option-shortcut">Ctrl+0</span>
+        </div>
+        <div class="menu-option" id="menu-fit-width">
+          <span class="menu-option-label">Fit Width</span>
+          <span class="menu-option-shortcut">Ctrl+1</span>
+        </div>
+        <div class="menu-option" id="menu-fit-page">
+          <span class="menu-option-label">Fit Page</span>
+          <span class="menu-option-shortcut">Ctrl+2</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-option" id="menu-rotate-left">
+          <span class="menu-option-label">Rotate Left</span>
+          <span class="menu-option-shortcut">Ctrl+[</span>
+        </div>
+        <div class="menu-option" id="menu-rotate-right">
+          <span class="menu-option-label">Rotate Right</span>
+          <span class="menu-option-shortcut">Ctrl+]</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-option" id="menu-single-page">
+          <span class="menu-option-label">Single Page</span>
+          <span class="menu-option-shortcut"></span>
+        </div>
+        <div class="menu-option" id="menu-continuous">
+          <span class="menu-option-label">Continuous</span>
+          <span class="menu-option-shortcut"></span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-option" id="menu-show-properties">
+          <span class="menu-option-label">Properties Panel</span>
+          <span class="menu-option-shortcut">F12</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-item" data-menu="tools">
+      <span class="menu-label">Tools</span>
+      <div class="menu-dropdown" id="menu-tools">
+        <div class="menu-option" id="menu-tool-select">
+          <span class="menu-option-label">Select Tool</span>
+          <span class="menu-option-shortcut">V</span>
+        </div>
+        <div class="menu-option" id="menu-tool-hand">
+          <span class="menu-option-label">Hand Tool</span>
+          <span class="menu-option-shortcut">H</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-option" id="menu-tool-highlight">
+          <span class="menu-option-label">Highlight</span>
+          <span class="menu-option-shortcut">1</span>
+        </div>
+        <div class="menu-option" id="menu-tool-draw">
+          <span class="menu-option-label">Freehand</span>
+          <span class="menu-option-shortcut">2</span>
+        </div>
+        <div class="menu-option" id="menu-tool-line">
+          <span class="menu-option-label">Line</span>
+          <span class="menu-option-shortcut">3</span>
+        </div>
+        <div class="menu-option" id="menu-tool-box">
+          <span class="menu-option-label">Rectangle</span>
+          <span class="menu-option-shortcut">4</span>
+        </div>
+        <div class="menu-option" id="menu-tool-circle">
+          <span class="menu-option-label">Ellipse</span>
+          <span class="menu-option-shortcut">5</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-option" id="menu-tool-text">
+          <span class="menu-option-label">Text Box</span>
+          <span class="menu-option-shortcut">T</span>
+        </div>
+        <div class="menu-option" id="menu-tool-comment">
+          <span class="menu-option-label">Note</span>
+          <span class="menu-option-shortcut">N</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-item" data-menu="help">
+      <span class="menu-label">Help</span>
+      <div class="menu-dropdown" id="menu-help">
+        <div class="menu-option" id="menu-about">
+          <span class="menu-option-label">About PDF Annotator</span>
+          <span class="menu-option-shortcut"></span>
+        </div>
+        <div class="menu-option" id="menu-shortcuts">
+          <span class="menu-option-label">Keyboard Shortcuts</span>
+          <span class="menu-option-shortcut">F1</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ribbon -->
+  <div class="ribbon-container">
+    <!-- Ribbon Tabs -->
+    <div class="ribbon-tabs">
+      <button class="ribbon-tab active" data-tab="home">Home</button>
+      <button class="ribbon-tab" data-tab="comment">Comment</button>
+      <button class="ribbon-tab" data-tab="view">View</button>
+      <button class="ribbon-tab" data-tab="edit">Edit</button>
+      <button class="ribbon-tab" data-tab="forms">Forms</button>
+      <button class="ribbon-tab" data-tab="organize">Organize</button>
+    </div>
+
+    <!-- Home Tab Content -->
+    <div class="ribbon-content active" id="tab-home">
+      <div class="ribbon-groups">
+        <!-- Tools Group -->
+        <div class="ribbon-group">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn large active" id="tool-select" title="Select">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Select</span>
+            </button>
+            <button class="ribbon-btn large" id="tool-hand" title="Hand Tool">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Hand Tool</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Tools</div>
+        </div>
+
+        <!-- View Group -->
+        <div class="ribbon-group">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn" id="zoom-in-ribbon" title="Zoom In">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Zoom In</span>
+            </button>
+            <button class="ribbon-btn" id="zoom-out-ribbon" title="Zoom Out">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Zoom Out</span>
+            </button>
+            <button class="ribbon-btn" id="fit-width" title="Fit Width">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Fit Width</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Zoom</div>
+        </div>
+
+        <!-- Page Navigation -->
+        <div class="ribbon-group">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn" id="first-page" title="First Page">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">First</span>
+            </button>
+            <button class="ribbon-btn" id="prev-page-ribbon" title="Previous Page">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Previous</span>
+            </button>
+            <button class="ribbon-btn" id="next-page-ribbon" title="Next Page">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Next</span>
+            </button>
+            <button class="ribbon-btn" id="last-page" title="Last Page">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Last</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Navigate</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comment Tab Content -->
+    <div class="ribbon-content" id="tab-comment">
+      <div class="ribbon-groups">
+        <!-- Drawing Tools -->
+        <div class="ribbon-group" style="min-width: 200px;">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn" id="tool-highlight" title="Highlight">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10M3 10h18M3 14h18"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Highlight</span>
+            </button>
+            <button class="ribbon-btn" id="tool-draw" title="Freehand">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Freehand</span>
+            </button>
+            <button class="ribbon-btn" id="tool-line" title="Line">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19l14-14"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Line</span>
+            </button>
+            <button class="ribbon-btn" id="tool-arrow" title="Arrow">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Arrow</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Drawing</div>
+        </div>
+
+        <!-- Shapes -->
+        <div class="ribbon-group" style="min-width: 200px;">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn" id="tool-box" title="Rectangle">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="4" y="4" width="16" height="16" rx="2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Rectangle</span>
+            </button>
+            <button class="ribbon-btn" id="tool-circle" title="Ellipse">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Ellipse</span>
+            </button>
+            <button class="ribbon-btn" id="tool-polygon" title="Polygon">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Polygon</span>
+            </button>
+            <button class="ribbon-btn" id="tool-cloud" title="Cloud">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Cloud</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Shapes</div>
+        </div>
+
+        <!-- Text & Notes -->
+        <div class="ribbon-group">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn" id="tool-text" title="Text Box">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Text Box</span>
+            </button>
+            <button class="ribbon-btn" id="tool-comment" title="Note">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Note</span>
+            </button>
+            <button class="ribbon-btn" id="tool-callout" title="Callout">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Callout</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Text</div>
+        </div>
+
+        <!-- Properties -->
+        <div class="ribbon-group">
+          <div class="ribbon-group-content">
+            <div class="ribbon-input-group">
+              <label class="ribbon-input-label">Color</label>
+              <input type="color" id="color-picker" class="ribbon-color-input" value="#ffff00">
+            </div>
+            <div class="ribbon-input-group">
+              <label class="ribbon-input-label">Width</label>
+              <input type="number" id="line-width" class="ribbon-input" min="1" max="20" value="3">
+            </div>
+          </div>
+          <div class="ribbon-group-label">Properties</div>
+        </div>
+
+        <!-- Actions -->
+        <div class="ribbon-group">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn" id="tool-undo" title="Undo">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Undo</span>
+            </button>
+            <button class="ribbon-btn" id="tool-clear" title="Clear All">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Clear</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Edit</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Tab Content -->
+    <div class="ribbon-content" id="tab-view">
+      <div class="ribbon-groups">
+        <!-- Page Display -->
+        <div class="ribbon-group">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn" id="single-page" title="Single Page">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Single</span>
+            </button>
+            <button class="ribbon-btn" id="continuous" title="Continuous">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Continuous</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Page Display</div>
+        </div>
+
+        <!-- Rotate -->
+        <div class="ribbon-group">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn" id="rotate-left" title="Rotate Left">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Rotate Left</span>
+            </button>
+            <button class="ribbon-btn" id="rotate-right" title="Rotate Right">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Rotate Right</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Rotate</div>
+        </div>
+
+        <!-- Zoom Presets -->
+        <div class="ribbon-group">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn" id="actual-size" title="Actual Size">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">100%</span>
+            </button>
+            <button class="ribbon-btn" id="fit-page" title="Fit Page">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Fit Page</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Zoom</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Tab Content -->
+    <div class="ribbon-content" id="tab-edit">
+      <div class="ribbon-groups">
+        <div class="ribbon-group">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn large" id="edit-text" title="Edit Text">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Edit Text</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Content</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Forms Tab Content -->
+    <div class="ribbon-content" id="tab-forms">
+      <div class="ribbon-groups">
+        <div class="ribbon-group">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn" id="form-text-field" title="Text Field">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Text Field</span>
+            </button>
+            <button class="ribbon-btn" id="form-checkbox" title="Checkbox">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Checkbox</span>
+            </button>
+            <button class="ribbon-btn" id="form-radio" title="Radio Button">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                  <circle cx="12" cy="12" r="4" fill="currentColor"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Radio</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Form Fields</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Organize Tab Content -->
+    <div class="ribbon-content" id="tab-organize">
+      <div class="ribbon-groups">
+        <div class="ribbon-group">
+          <div class="ribbon-group-content">
+            <button class="ribbon-btn" id="insert-page" title="Insert Page">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Insert</span>
+            </button>
+            <button class="ribbon-btn" id="delete-page" title="Delete Page">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Delete</span>
+            </button>
+            <button class="ribbon-btn" id="extract-pages" title="Extract Pages">
+              <div class="ribbon-btn-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <span class="ribbon-btn-label">Extract</span>
+            </button>
+          </div>
+          <div class="ribbon-group-label">Pages</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content">
+    <div class="main-view">
+      <div id="placeholder">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+        </svg>
+        <h2>No PDF Selected</h2>
+        <p>Click "Open PDF" to browse and annotate a PDF</p>
+      </div>
+
+      <div id="pdf-container">
+        <div id="canvas-wrapper">
+          <!-- Single page mode -->
+          <div id="canvas-container" class="single-page-container">
+            <canvas id="pdf-canvas"></canvas>
+            <canvas id="annotation-canvas"></canvas>
+          </div>
+          <!-- Continuous mode -->
+          <div id="continuous-container" class="continuous-container" style="display: none;">
+            <!-- Pages will be dynamically added here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Properties Panel -->
+    <div class="properties-panel" id="properties-panel">
+      <h3>Annotation Properties</h3>
+
+      <div class="property-group" id="prop-type-group">
+        <label>Type</label>
+        <input type="text" id="prop-type" readonly>
+      </div>
+
+      <div class="property-group" id="prop-color-group">
+        <label>Color</label>
+        <input type="color" id="prop-color">
+      </div>
+
+      <div class="property-group" id="prop-line-width-group">
+        <label>Line Width</label>
+        <input type="number" id="prop-line-width" min="1" max="20">
+      </div>
+
+      <div class="property-group" id="prop-text-group" style="display: none;">
+        <label>Text</label>
+        <textarea id="prop-text"></textarea>
+      </div>
+
+      <div class="property-group" id="prop-font-size-group" style="display: none;">
+        <label>Font Size</label>
+        <input type="number" id="prop-font-size" min="8" max="72">
+      </div>
+
+      <div class="property-actions">
+        <button class="property-btn delete" id="prop-delete">Delete</button>
+        <button class="property-btn close" id="prop-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page Controls -->
+  <div class="page-controls" id="page-controls">
+    <button class="page-btn" id="prev-page">Previous</button>
+    <span class="page-info" id="page-info">Page 1 / 1</span>
+    <button class="page-btn" id="next-page">Next</button>
+    <div class="zoom-controls">
+      <span style="font-size: 12px;">Zoom:</span>
+      <button class="page-btn" id="zoom-out">-</button>
+      <span id="zoom-level" style="font-size: 12px;">150%</span>
+      <button class="page-btn" id="zoom-in">+</button>
+    </div>
+  </div>
+
+  <script src="renderer.js" type="module"></script>
+</body>
+</html>

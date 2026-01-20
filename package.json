@@ -1,0 +1,24 @@
+{
+  "name": "web-pdf-editor",
+  "version": "1.0.0",
+  "description": "A professional PDF editor and annotator built with Electron",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "electron",
+    "pdf",
+    "editor",
+    "annotator",
+    "viewer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^5.4.530"
+  }
+}
