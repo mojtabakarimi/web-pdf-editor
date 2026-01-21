@@ -32,6 +32,7 @@ desktop.ini
 # Build output
 dist/
 build/
+!pdfjs/build/
 out/
 
 # Environment variables
