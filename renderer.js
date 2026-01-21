@@ -3,6 +3,39 @@ import * as pdfjsLib from './pdfjs/build/pdf.mjs';
 const fs = window.require('fs');
 const path = window.require('path');
 const { PDFDocument, rgb, StandardFonts } = window.require('pdf-lib');
+const { ipcRenderer } = window.require('electron');
+
+// Window control buttons
+document.getElementById('btn-minimize')?.addEventListener('click', () => ipcRenderer.send('window-minimize'));
+document.getElementById('btn-maximize')?.addEventListener('click', () => ipcRenderer.send('window-maximize'));
+document.getElementById('btn-close')?.addEventListener('click', () => ipcRenderer.send('window-close'));
+
+// About dialog
+const aboutDialog = document.getElementById('about-dialog');
+const { shell } = window.require('electron');
+
+function showAboutDialog() {
+  aboutDialog?.classList.add('visible');
+}
+
+function hideAboutDialog() {
+  aboutDialog?.classList.remove('visible');
+}
+
+document.getElementById('about-close-btn')?.addEventListener('click', hideAboutDialog);
+aboutDialog?.addEventListener('click', (e) => {
+  if (e.target === aboutDialog) hideAboutDialog();
+});
+
+document.getElementById('about-website-link')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  shell.openExternal('https://impertio.nl');
+});
+
+document.getElementById('about-email-link')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  shell.openExternal('mailto:maarten@impertio.nl');
+});
 
 // Set worker path
 pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/build/pdf.worker.mjs';
@@ -6248,7 +6281,7 @@ document.getElementById('menu-tool-comment')?.addEventListener('click', () => {
 // HELP MENU ACTIONS
 document.getElementById('menu-about')?.addEventListener('click', () => {
   closeAllMenus();
-  alert('PDF Annotator v1.0.0\n\nA professional PDF annotation application built with Electron and PDF.js.\n\n© 2026 PDF Annotator');
+  showAboutDialog();
 });
 
 document.getElementById('menu-shortcuts')?.addEventListener('click', () => {

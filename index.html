@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web PDF Editor</title>
+  <title>Impertio PDF Editor</title>
   <script src="pdfjs/build/pdf.mjs" type="module" id="pdfjs-script"></script>
   <style>
     * {
@@ -31,6 +31,7 @@
       justify-content: space-between;
       height: 40px;
       flex-shrink: 0;
+      -webkit-app-region: drag;
     }
 
     .title-bar-left {
@@ -77,6 +78,34 @@
 
     .title-btn.secondary:hover {
       background: #4b5563;
+    }
+
+    /* Window Controls */
+    .window-controls {
+      display: flex;
+      -webkit-app-region: no-drag;
+    }
+
+    .window-btn {
+      width: 46px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .window-btn:hover {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .window-btn-close:hover {
+      background: #e81123;
+      color: white;
     }
 
     /* Menu Bar */
@@ -1940,6 +1969,203 @@
       text-align: center;
     }
 
+    /* About Dialog */
+    .about-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+    }
+
+    .about-overlay.visible {
+      display: flex;
+    }
+
+    .about-dialog {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border-radius: 16px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+      width: 420px;
+      overflow: hidden;
+      animation: aboutSlideIn 0.3s ease;
+    }
+
+    @keyframes aboutSlideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .about-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 32px 32px 24px;
+      text-align: center;
+      position: relative;
+    }
+
+    .about-logo {
+      width: 72px;
+      height: 72px;
+      background: white;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .about-logo svg {
+      width: 44px;
+      height: 44px;
+    }
+
+    .about-app-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      margin: 0 0 4px;
+      letter-spacing: -0.5px;
+    }
+
+    .about-version {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.8);
+      margin: 0;
+    }
+
+    .about-close-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .about-close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .about-content {
+      padding: 24px 32px 32px;
+      color: #e2e8f0;
+    }
+
+    .about-tagline {
+      font-size: 14px;
+      color: #a5b4fc;
+      margin: 0 0 20px;
+      font-style: italic;
+      text-align: center;
+    }
+
+    .about-description {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #94a3b8;
+      margin: 0 0 24px;
+      text-align: center;
+    }
+
+    .about-company {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .about-company-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin: 0 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .about-company-name::before {
+      content: '';
+      width: 4px;
+      height: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 2px;
+    }
+
+    .about-company-desc {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .about-links {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .about-link {
+      background: rgba(102, 126, 234, 0.2);
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      color: #a5b4fc;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .about-link:hover {
+      background: rgba(102, 126, 234, 0.3);
+      border-color: rgba(102, 126, 234, 0.5);
+      color: white;
+    }
+
+    .about-link svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .about-footer {
+      text-align: center;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 8px;
+    }
+
+    .about-copyright {
+      font-size: 11px;
+      color: #475569;
+      margin: 0;
+    }
+
     /* Loading Overlay */
     .loading-overlay {
       position: fixed;
@@ -1990,8 +2216,19 @@
   <!-- Title Bar -->
   <div class="title-bar">
     <div class="title-bar-left">
-      <span class="app-title">Web PDF Editor</span>
+      <span class="app-title">Impertio PDF Editor</span>
       <span class="file-name" id="file-info"></span>
+    </div>
+    <div class="window-controls">
+      <button class="window-btn" id="btn-minimize" title="Minimize">
+        <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
+      </button>
+      <button class="window-btn" id="btn-maximize" title="Maximize">
+        <svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+      <button class="window-btn window-btn-close" id="btn-close" title="Close">
+        <svg width="10" height="10" viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>
+      </button>
     </div>
   </div>
 
@@ -2011,11 +2248,6 @@
         <div class="menu-option" id="menu-save-as">
           <span class="menu-option-label">Save As...</span>
           <span class="menu-option-shortcut">Ctrl+Shift+S</span>
-        </div>
-        <div class="menu-divider"></div>
-        <div class="menu-option" id="menu-close">
-          <span class="menu-option-label">Close</span>
-          <span class="menu-option-shortcut">Ctrl+W</span>
         </div>
         <div class="menu-divider"></div>
         <div class="menu-option" id="menu-exit">
@@ -2163,7 +2395,7 @@
       <span class="menu-label">Help</span>
       <div class="menu-dropdown" id="menu-help">
         <div class="menu-option" id="menu-about">
-          <span class="menu-option-label">About Web PDF Editor</span>
+          <span class="menu-option-label">About Impertio PDF Editor</span>
           <span class="menu-option-shortcut"></span>
         </div>
         <div class="menu-option" id="menu-shortcuts">
@@ -3718,6 +3950,59 @@
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/></svg>
       </span>
       <span class="context-menu-label">Properties...</span>
+    </div>
+  </div>
+
+  <!-- About Dialog -->
+  <div class="about-overlay" id="about-dialog">
+    <div class="about-dialog">
+      <div class="about-header">
+        <button class="about-close-btn" id="about-close-btn">&times;</button>
+        <div class="about-logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14 2V8H20" stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 13H8" stroke="#764ba2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 17H8" stroke="#764ba2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 9H9H8" stroke="#764ba2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h1 class="about-app-name">Impertio PDF Editor</h1>
+        <p class="about-version">Version 1.0.0</p>
+      </div>
+      <div class="about-content">
+        <p class="about-tagline">IT Without Chains</p>
+        <p class="about-description">
+          A professional PDF editor for viewing, annotating, and editing PDF documents.
+          Built with open source technologies.
+        </p>
+        <div class="about-company">
+          <h3 class="about-company-name">Impertio Studio</h3>
+          <p class="about-company-desc">
+            From the Latin "to share and distribute" - we liberate businesses from vendor lock-in
+            through professional open source solutions. Transparent pricing, transparent code.
+          </p>
+        </div>
+        <div class="about-links">
+          <a href="#" class="about-link" id="about-website-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            Website
+          </a>
+          <a href="#" class="about-link" id="about-email-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            Contact
+          </a>
+        </div>
+        <div class="about-footer">
+          <p class="about-copyright">&copy; 2025 Impertio Studio. All rights reserved.</p>
+        </div>
+      </div>
     </div>
   </div>
 

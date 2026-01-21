@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
 
 // Auto-reload in development
@@ -17,15 +17,30 @@ if (process.platform === 'linux' && process.getuid && process.getuid() === 0) {
 const DEV_AUTO_LOAD_PDF = null;
 
 function createWindow() {
+  // Remove default menu
+  Menu.setApplicationMenu(null);
+
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: false,
       nodeIntegration: true
     }
   });
+
+  // Window control handlers
+  ipcMain.on('window-minimize', () => mainWindow.minimize());
+  ipcMain.on('window-maximize', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  });
+  ipcMain.on('window-close', () => mainWindow.close());
 
   mainWindow.loadFile('index.html');
   // mainWindow.webContents.openDevTools(); // Disabled - uncomment for debugging
