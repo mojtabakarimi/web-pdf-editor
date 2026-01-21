@@ -1,6 +1,6 @@
 {
   "name": "web-pdf-editor",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A professional PDF editor and annotator built with Electron",
   "main": "main.js",
   "scripts": {
