@@ -43,7 +43,7 @@ function createWindow() {
   ipcMain.on('window-close', () => mainWindow.close());
 
   mainWindow.loadFile('index.html');
-  // mainWindow.webContents.openDevTools(); // Disabled - uncomment for debugging
+  mainWindow.webContents.openDevTools(); // Enabled for debugging
 
   // Auto-load PDF for development
   mainWindow.webContents.on('did-finish-load', () => {
