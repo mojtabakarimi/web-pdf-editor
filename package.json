@@ -42,10 +42,7 @@
       "**/*",
       "!dist/**"
     ],
-    "asarUnpack": [
-      "pdfjs/**/*",
-      "renderer.js"
-    ],
+    "asar": false,
     "win": {
       "target": [
         {
