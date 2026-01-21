@@ -1,6 +1,6 @@
-# PDF Annotator
+# Web PDF Editor
 
-A professional PDF annotation application built with Electron and PDF.js, featuring a comprehensive ribbon interface similar to PDF-XChange Editor.
+A professional PDF editor and annotation application built with Electron and PDF.js, featuring a comprehensive ribbon interface similar to PDF-XChange Editor.
 
 ## Features
 
@@ -96,7 +96,7 @@ npm start
 ## Project Structure
 
 ```
-pdf-annotator/
+web-pdf-editor/
 ├── index.html          # Main HTML file with UI
 ├── main.js            # Electron main process
 ├── preload.js         # Preload script for IPC

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF Annotator</title>
+  <title>Web PDF Editor</title>
   <script src="pdfjs/build/pdf.mjs" type="module" id="pdfjs-script"></script>
   <style>
     * {
@@ -440,8 +440,10 @@
     }
 
     #canvas-wrapper {
-      display: inline-block;
-      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
       margin-top: 0;
     }
 
@@ -451,12 +453,21 @@
       display: inline-block;
     }
 
+    #canvas-container.hidden {
+      display: none;
+    }
+
     .continuous-container {
-      display: flex;
+      display: none;
       flex-direction: column;
       gap: 20px;
       align-items: center;
       padding-top: 20px;
+      width: 100%;
+    }
+
+    .continuous-container.active {
+      display: flex !important;
     }
 
     .page-wrapper {
@@ -657,7 +668,7 @@
   <!-- Title Bar -->
   <div class="title-bar">
     <div class="title-bar-left">
-      <span class="app-title">PDF Annotator</span>
+      <span class="app-title">Web PDF Editor</span>
       <span class="file-name" id="file-info"></span>
     </div>
   </div>
@@ -821,7 +832,7 @@
       <span class="menu-label">Help</span>
       <div class="menu-dropdown" id="menu-help">
         <div class="menu-option" id="menu-about">
-          <span class="menu-option-label">About PDF Annotator</span>
+          <span class="menu-option-label">About Web PDF Editor</span>
           <span class="menu-option-shortcut"></span>
         </div>
         <div class="menu-option" id="menu-shortcuts">
@@ -1278,7 +1289,7 @@
             <canvas id="annotation-canvas"></canvas>
           </div>
           <!-- Continuous mode -->
-          <div id="continuous-container" class="continuous-container" style="display: none;">
+          <div id="continuous-container" class="continuous-container">
             <!-- Pages will be dynamically added here -->
           </div>
         </div>
